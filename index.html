@@ -21,7 +21,6 @@
             aHash、dHash、pHash 感知差值，适合快速筛查目录差异、复核素材版本和定位近似图。
           </p>
           <div class="hero-actions">
-            <button id="compareButton" class="primary-button" type="button">开始对比</button>
             <a class="secondary-link" href="#uploadSection">查看上传区域</a>
           </div>
           <div class="hero-meta">
@@ -53,17 +52,17 @@
         <div class="intro-item">
           <span class="intro-kicker">Formal Name</span>
           <strong>PixelProof Studio</strong>
-          <p>一个更适合公开部署、团队共享和长期使用的正式项目名。</p>
+          <p>适合公开部署和团队内部共享使用。</p>
         </div>
         <div class="intro-item">
           <span class="intro-kicker">How It Pairs</span>
           <strong>相对路径优先</strong>
-          <p>默认按目录相对路径配对，其次按文件名，最后按上传顺序。</p>
+          <p>路径优先，文件名和顺序作为兜底。</p>
         </div>
         <div class="intro-item">
           <span class="intro-kicker">Privacy</span>
           <strong>浏览器本地处理</strong>
-          <p>没有后端，不上传图片内容，适合在公司电脑直接打开页面使用。</p>
+          <p>没有后端，图片只在本地浏览器处理。</p>
         </div>
       </section>
 
@@ -83,7 +82,7 @@
         </div>
         <div class="setting-item setting-copy">
           <span>操作提示</span>
-          <p>支持点击上传，也支持把文件夹、单张图片或多张图片直接拖进左右任意区域。</p>
+          <p>支持点击上传，也支持直接拖拽文件夹和图片。</p>
         </div>
       </section>
 
@@ -117,7 +116,6 @@
           </div>
 
           <p class="selection-summary" id="leftSummary">未选择任何图片</p>
-          <div class="selection-list" id="leftSelectionList"></div>
         </article>
 
         <article class="panel upload-panel" data-side="right">
@@ -149,8 +147,19 @@
           </div>
 
           <p class="selection-summary" id="rightSummary">未选择任何图片</p>
-          <div class="selection-list" id="rightSelectionList"></div>
         </article>
+      </section>
+
+      <section class="panel compare-bar">
+        <div class="compare-bar-item">
+          <span class="compare-bar-label">对比组 A</span>
+          <strong id="leftCount">0 张</strong>
+        </div>
+        <div class="compare-bar-item">
+          <span class="compare-bar-label">对比组 B</span>
+          <strong id="rightCount">0 张</strong>
+        </div>
+        <button id="compareButton" class="primary-button compare-bar-button" type="button">开始对比</button>
       </section>
 
       <section class="panel summary-panel">
@@ -188,11 +197,7 @@
           <div>
             <p class="panel-label">Results</p>
             <h2>对比结果</h2>
-            <p>改为卡片式结果布局，不用横向滚动也能看到完整判断。</p>
           </div>
-        </div>
-        <div class="result-legend">
-          <span>每张结果卡同时展示配对信息、左右图片、MD5、三种感知哈希和综合结论。</span>
         </div>
         <div class="result-list" id="resultBody">
           <div class="empty-state">上传后点击“开始对比”查看结果</div>
