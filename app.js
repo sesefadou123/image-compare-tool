@@ -14,6 +14,7 @@ const elements = {
   pairingMode: document.getElementById("pairingMode"),
   similarityThreshold: document.getElementById("similarityThreshold"),
   compareButton: document.getElementById("compareButton"),
+  resetAllButton: document.getElementById("resetAllButton"),
   resultBody: document.getElementById("resultBody"),
   statusText: document.getElementById("statusText"),
   pairedCount: document.getElementById("pairedCount"),
@@ -25,6 +26,8 @@ const elements = {
   rightSummary: document.getElementById("rightSummary"),
   leftCount: document.getElementById("leftCount"),
   rightCount: document.getElementById("rightCount"),
+  leftCountTop: document.getElementById("leftCountTop"),
+  rightCountTop: document.getElementById("rightCountTop"),
 };
 
 init();
@@ -34,6 +37,7 @@ function init() {
   bindSideInputs("right");
   bindDropZones();
   bindClearButtons();
+  bindResetAllButton();
   elements.compareButton.addEventListener("click", handleCompare);
 }
 
@@ -106,6 +110,20 @@ function bindClearButtons() {
       updateSelectionUI(side);
       setStatus(`${side === "left" ? "对比组 A" : "对比组 B"} 已清空`);
     });
+  });
+}
+
+function bindResetAllButton() {
+  elements.resetAllButton.addEventListener("click", () => {
+    releaseEntries(state.left);
+    releaseEntries(state.right);
+    state.left = [];
+    state.right = [];
+    updateSelectionUI("left");
+    updateSelectionUI("right");
+    resetSummary();
+    renderEmpty("上傳圖片後，點擊開始執行演算法比對");
+    setStatus("單圖直接比對 / 多圖自動匹配同名");
   });
 }
 
@@ -237,17 +255,20 @@ async function readAllDirectoryEntries(reader) {
 function updateSelectionUI(side) {
   const entries = state[side];
   const summary = elements[`${side}Summary`];
-  const count = elements[`${side}Count`];
+  const count = elements[`${side}Count`] || { textContent: "0 張" };
+  const topCount = elements[`${side}CountTop`] || { textContent: "0" };
 
   if (!entries.length) {
-    summary.textContent = "未选择任何图片";
+    summary.textContent = "已選擇 0 張圖片";
     count.textContent = "0 张";
+    topCount.textContent = "0";
     return;
   }
 
   const folderCount = entries.filter((entry) => entry.relativePath).length;
-  summary.textContent = `共上传 ${entries.length} 张图片，其中 ${folderCount} 张来自目录上传`;
-  count.textContent = `${entries.length} 张`;
+  summary.textContent = `已選擇 ${entries.length} 張圖片${folderCount ? `，其中 ${folderCount} 張來自資料夾` : ""}`;
+  count.textContent = String(entries.length);
+  topCount.textContent = String(entries.length);
 }
 
 async function handleCompare() {
@@ -607,122 +628,73 @@ function renderResults(results) {
     return;
   }
 
-  elements.resultBody.innerHTML = results.map(renderResultCard).join("");
+  elements.resultBody.innerHTML = results.map(renderResultRow).join("");
 }
 
-function renderResultCard(result) {
-  if (result.missing) {
-    return `
-      <article class="result-card missing-row">
-        <div class="result-card-head">
-          <span class="result-card-title">对比结果</span>
-          <span class="result-card-key">${escapeHtml(result.key)}</span>
-        </div>
-        <div class="result-primary-grid">
-          <div class="result-compare-grid">
-            <section class="result-column">
-              <span class="result-column-label">A</span>
-              ${renderPreviewCell(result.left)}
-            </section>
-            <section class="result-column">
-              <span class="result-column-label">B</span>
-              ${renderPreviewCell(result.right)}
-            </section>
-          </div>
-          <section class="result-conclusion-card">
-            <span class="result-column-label">结论</span>
-            <span class="conclusion-badge ${result.conclusionClass}" title="${escapeHtml(result.errorMessage || result.conclusion)}">
-              ${result.conclusion}
-            </span>
-          </section>
-        </div>
-        <div class="result-metrics-row">
-          ${renderMetricCard("MD5", `<span class="md5-badge md5-different">${result.errorMessage ? "处理失败" : "缺少图片"}</span>`)}
-          ${renderMetricCard("pHash", "-")}
-          ${renderMetricCard("dHash", "-")}
-          ${renderMetricCard("aHash", "-")}
-        </div>
-      </article>
-    `;
-  }
+function renderResultRow(result) {
+  const description = getResultDescription(result);
+  const md5Badge = result.missing
+    ? `<span class="status-badge status-missing">${result.errorMessage ? "處理失敗" : "缺少圖片"}</span>`
+    : `<span class="status-badge ${result.md5Equal ? "status-true" : "status-false"}">${result.md5Equal ? "是" : "否"}</span>`;
 
   return `
-    <article class="result-card">
-      <div class="result-card-head">
-        <span class="result-card-title">对比结果</span>
-        <span class="result-card-key">${escapeHtml(result.key)}</span>
+    <div class="result-row ${result.missing ? "missing-row" : ""}">
+      <div class="file-cell" title="${escapeHtml(result.key)}">
+        <strong>${escapeHtml(result.key)}</strong>
+        <span>${escapeHtml(description)}</span>
       </div>
-      <div class="result-primary-grid">
-        <div class="result-compare-grid">
-          <section class="result-column">
-            <span class="result-column-label">A</span>
-            ${renderPreviewCell(result.left)}
-          </section>
-          <section class="result-column">
-            <span class="result-column-label">B</span>
-            ${renderPreviewCell(result.right)}
-          </section>
-        </div>
-        <section class="result-conclusion-card">
-          <span class="result-column-label">结论</span>
-          <span class="conclusion-badge ${result.conclusionClass}">${result.conclusion}</span>
-        </section>
-      </div>
-      <div class="result-metrics-row">
-        ${renderMetricCard(
-          "MD5",
-          `<span class="md5-badge ${result.md5Equal ? "md5-match" : "md5-different"}">${result.md5Equal ? "一致" : "不一致"}</span>`,
-        )}
-        ${renderMetricCard("pHash", result.phashDistance, result.phashDistance <= 5)}
-        ${renderMetricCard("dHash", result.dhashDistance, result.dhashDistance <= 5)}
-        ${renderMetricCard("aHash", result.ahashDistance, result.ahashDistance <= 5)}
-      </div>
-    </article>
-  `;
-}
-
-function renderMetricCard(label, value, isClose = false) {
-  if (typeof value === "number") {
-    return `
-      <div class="metric-card">
-        <span class="metric-label">${label}</span>
-        <div class="metric-value is-number">
-          <span class="hash-distance ${isClose ? "is-close" : ""}">${value}</span>
-        </div>
-      </div>
-    `;
-  }
-
-  return `
-    <div class="metric-card">
-      <span class="metric-label">${label}</span>
-      <div class="metric-value">${value}</div>
+      <div>${renderPreviewPair(result.left, result.right)}</div>
+      <div>${md5Badge}</div>
+      <div class="distance-value ${!result.missing && result.phashDistance <= 5 ? "is-close" : ""}">${result.missing ? "-" : result.phashDistance}</div>
+      <div class="distance-value ${!result.missing && result.dhashDistance <= 5 ? "is-close" : ""}">${result.missing ? "-" : result.dhashDistance}</div>
+      <div class="distance-value ${!result.missing && result.ahashDistance <= 5 ? "is-close" : ""}">${result.missing ? "-" : result.ahashDistance}</div>
+      <div><span class="result-badge ${mapConclusionClass(result.conclusionClass)}">${result.conclusion}</span></div>
     </div>
   `;
 }
 
-function renderPreviewCell(entry) {
+function renderPreviewPair(leftEntry, rightEntry) {
+  return `
+    <div class="preview-pair">
+      ${renderPreviewItem(leftEntry)}
+      <span class="preview-arrow">›</span>
+      ${renderPreviewItem(rightEntry)}
+    </div>
+  `;
+}
+
+function renderPreviewItem(entry) {
   if (!entry) {
-    return `
-      <div class="preview-card">
-        <div class="preview-placeholder">缺失</div>
-        <div class="preview-meta">
-          <strong>未找到对应图片</strong>
-          <span>-</span>
-        </div>
-      </div>
-    `;
+    return `<div class="preview-placeholder">缺失</div>`;
   }
 
-  return `
-    <div class="preview-card">
-      <img src="${entry.previewUrl}" alt="${escapeHtml(entry.name)}" />
-      <div class="preview-meta">
-        <strong title="${escapeHtml(entry.name)}">${escapeHtml(entry.name)}</strong>
-        <span title="${escapeHtml(entry.displayPath)}">${escapeHtml(entry.relativePath || entry.displayPath)}</span>
-      </div>
-    </div>
-  `;
+  return `<img class="preview-thumb" src="${entry.previewUrl}" alt="${escapeHtml(entry.name)}" />`;
+}
+
+function getResultDescription(result) {
+  if (result.left && result.right) {
+    return `${result.left.name} vs ${result.right.name}`;
+  }
+  if (result.left) {
+    return `${result.left.name} 缺少對應 B 圖`;
+  }
+  if (result.right) {
+    return `${result.right.name} 缺少對應 A 圖`;
+  }
+  return result.errorMessage || "無法對比";
+}
+
+function mapConclusionClass(conclusionClass) {
+  if (conclusionClass === "conclusion-similar") {
+    return "result-similar";
+  }
+  if (conclusionClass === "conclusion-general") {
+    return "result-general";
+  }
+  if (conclusionClass === "conclusion-different") {
+    return "result-different";
+  }
+  return "result-missing";
 }
 
 function updateSummary(results) {

@@ -3,204 +3,145 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PixelProof Studio</title>
+    <title>图片感知比对工作台</title>
     <meta
       name="description"
-      content="PixelProof Studio 用于对比两组图片的 MD5 与 aHash、dHash、pHash 差值，支持文件夹、单张图片和多张图片拖拽上传。"
+      content="基于 MD5、aHash、dHash、pHash 的图片感知比对工作台，支持文件夹、单图、多图上传与自动配对。"
     />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="app-shell">
-      <section class="hero">
-        <div class="hero-copy-block">
-          <p class="eyebrow">PixelProof Studio</p>
-          <h1>更克制地判断图片是否真的一致。</h1>
-          <p class="hero-copy">
-            面向设计、内容与审核场景的轻量图片核验工具。对比两组图片的 MD5、一致性和
-            aHash、dHash、pHash 感知差值，适合快速筛查目录差异、复核素材版本和定位近似图。
-          </p>
-          <div class="hero-actions">
-            <a class="secondary-link" href="#uploadSection">查看上传区域</a>
+      <section class="overview-card">
+        <div class="overview-main">
+          <div class="overview-icon" aria-hidden="true">
+            <span></span>
           </div>
-          <div class="hero-meta">
-            <span>纯前端运行</span>
-            <span>支持拖拽文件夹</span>
-            <span>本地浏览器处理</span>
-          </div>
-        </div>
-
-        <aside class="hero-panel">
-          <div class="hero-panel-section">
-            <p class="hero-panel-label">结论定义</p>
-            <ul class="hero-list">
-              <li>相似：红色标记，适合快速确认高度接近或完全一致的图片。</li>
-              <li>一般：黄色标记，适合人工二次复核。</li>
-              <li>不相似：绿色标记，表示差异明显。</li>
-            </ul>
-          </div>
-          <div class="hero-panel-section">
-            <p class="hero-panel-label">差值提示</p>
-            <p class="hero-note-copy">
-              当 `aHash`、`dHash`、`pHash` 的任一差值小于等于 `5` 时，该数值会高亮标红。
+          <div>
+            <h1>圖片感知比對工作台</h1>
+            <p class="overview-subtitle">
+              基於 MD5 雜湊特徵及 aHash/dHash/pHash 漢明距離(Hamming Distance)分析
             </p>
           </div>
+        </div>
+        <div class="overview-stats">
+          <div class="overview-stat">
+            <span>圖片集 A 數量</span>
+            <strong id="leftCountTop">0</strong>
+          </div>
+          <div class="overview-stat">
+            <span>圖片集 B 數量</span>
+            <strong id="rightCountTop">0</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="control-grid" id="uploadSection">
+        <article class="upload-card" data-side="left">
+          <h2>選擇基準圖片集 (A)</h2>
+          <div class="upload-actions">
+            <label class="upload-action upload-action-purple">
+              <span>資料夾</span>
+              <input id="leftFolderInput" type="file" webkitdirectory directory multiple />
+            </label>
+            <label class="upload-action upload-action-purple">
+              <span>多圖/單圖</span>
+              <input id="leftFilesInput" type="file" accept="image/*" multiple />
+            </label>
+          </div>
+          <div class="drop-surface" data-drop-zone="left">
+            <p class="drop-description">拖拽圖片或整個資料夾到這裡</p>
+          </div>
+          <p class="selection-summary" id="leftSummary">已選擇 0 張圖片</p>
+          <button class="subtle-button clear-button" data-side="left" type="button">清空 A</button>
+        </article>
+
+        <article class="upload-card" data-side="right">
+          <h2>選擇對比圖片集 (B)</h2>
+          <div class="upload-actions">
+            <label class="upload-action upload-action-green">
+              <span>資料夾</span>
+              <input id="rightFolderInput" type="file" webkitdirectory directory multiple />
+            </label>
+            <label class="upload-action upload-action-green">
+              <span>多圖/單圖</span>
+              <input id="rightFilesInput" type="file" accept="image/*" multiple />
+            </label>
+          </div>
+          <div class="drop-surface" data-drop-zone="right">
+            <p class="drop-description">拖拽圖片或整個資料夾到這裡</p>
+          </div>
+          <p class="selection-summary" id="rightSummary">已選擇 0 張圖片</p>
+          <button class="subtle-button clear-button" data-side="right" type="button">清空 B</button>
+        </article>
+
+        <aside class="action-card">
+          <p class="action-eyebrow">Compare</p>
+          <button id="compareButton" class="primary-button action-button" type="button">
+            開始執行演算法比對
+          </button>
+          <div class="action-settings">
+            <label class="setting-item">
+              <span>配對策略</span>
+              <select id="pairingMode">
+                <option value="auto">自動</option>
+                <option value="relative">按目錄相對路徑</option>
+                <option value="filename">按檔名</option>
+                <option value="index">按上傳順序</option>
+              </select>
+            </label>
+            <label class="setting-item">
+              <span>一般判定閾值</span>
+              <input id="similarityThreshold" type="number" min="6" max="64" value="12" />
+            </label>
+          </div>
+          <p class="action-note" id="statusText">單圖直接比對 / 多圖自動匹配同名</p>
         </aside>
       </section>
 
-      <section class="panel intro-strip">
-        <div class="intro-item">
-          <span class="intro-kicker">Formal Name</span>
-          <strong>PixelProof Studio</strong>
-          <p>适合公开部署和团队内部共享使用。</p>
-        </div>
-        <div class="intro-item">
-          <span class="intro-kicker">How It Pairs</span>
-          <strong>相对路径优先</strong>
-          <p>路径优先，文件名和顺序作为兜底。</p>
-        </div>
-        <div class="intro-item">
-          <span class="intro-kicker">Privacy</span>
-          <strong>浏览器本地处理</strong>
-          <p>没有后端，图片只在本地浏览器处理。</p>
-        </div>
-      </section>
-
-      <section class="panel settings-panel">
-        <div class="setting-item">
-          <label for="pairingMode">配对策略</label>
-          <select id="pairingMode">
-            <option value="auto">自动</option>
-            <option value="relative">按目录相对路径</option>
-            <option value="filename">按文件名</option>
-            <option value="index">按上传顺序</option>
-          </select>
-        </div>
-        <div class="setting-item">
-          <label for="similarityThreshold">一般判定阈值</label>
-          <input id="similarityThreshold" type="number" min="6" max="64" value="12" />
-        </div>
-        <div class="setting-item setting-copy">
-          <span>操作提示</span>
-          <p>支持点击上传，也支持直接拖拽文件夹和图片。</p>
-        </div>
-      </section>
-
-      <section class="upload-grid" id="uploadSection">
-        <article class="panel upload-panel" data-side="left">
-          <div class="panel-head">
-            <div>
-              <p class="panel-label">Source Set A</p>
-              <h2>对比组 A</h2>
-              <p>上传原始素材、标准版本或参考目录</p>
-            </div>
-            <button class="ghost-button clear-button" data-side="left" type="button">清空</button>
-          </div>
-
-          <div class="drop-surface" data-drop-zone="left">
-            <div class="drop-surface-copy">
-              <p class="drop-title">拖拽图片或整个文件夹到这里</p>
-              <p class="drop-description">支持目录、单张图片和多张图片混合上传</p>
-            </div>
-            <div class="quick-actions">
-              <label class="quick-action-card">
-                <span>选择文件夹</span>
-                <input id="leftFolderInput" type="file" webkitdirectory directory multiple />
-              </label>
-              <label class="quick-action-card">
-                <span>选择图片</span>
-                <input id="leftFilesInput" type="file" accept="image/*" multiple />
-              </label>
-            </div>
-            <p class="drop-footnote">拖拽上传会自动保留目录层级，便于按相对路径配对。</p>
-          </div>
-
-          <p class="selection-summary" id="leftSummary">未选择任何图片</p>
-        </article>
-
-        <article class="panel upload-panel" data-side="right">
-          <div class="panel-head">
-            <div>
-              <p class="panel-label">Source Set B</p>
-              <h2>对比组 B</h2>
-              <p>上传待核对版本、导出结果或待审目录</p>
-            </div>
-            <button class="ghost-button clear-button" data-side="right" type="button">清空</button>
-          </div>
-
-          <div class="drop-surface" data-drop-zone="right">
-            <div class="drop-surface-copy">
-              <p class="drop-title">拖拽图片或整个文件夹到这里</p>
-              <p class="drop-description">目录对目录、图对图都可以直接比较</p>
-            </div>
-            <div class="quick-actions">
-              <label class="quick-action-card">
-                <span>选择文件夹</span>
-                <input id="rightFolderInput" type="file" webkitdirectory directory multiple />
-              </label>
-              <label class="quick-action-card">
-                <span>选择图片</span>
-                <input id="rightFilesInput" type="file" accept="image/*" multiple />
-              </label>
-            </div>
-            <p class="drop-footnote">如果两侧目录结构一致，默认会优先按相对路径自动配对。</p>
-          </div>
-
-          <p class="selection-summary" id="rightSummary">未选择任何图片</p>
-        </article>
-      </section>
-
-      <section class="panel compare-bar">
-        <div class="compare-bar-item">
-          <span class="compare-bar-label">对比组 A</span>
-          <strong id="leftCount">0 张</strong>
-        </div>
-        <div class="compare-bar-item">
-          <span class="compare-bar-label">对比组 B</span>
-          <strong id="rightCount">0 张</strong>
-        </div>
-        <button id="compareButton" class="primary-button compare-bar-button" type="button">开始对比</button>
-      </section>
-
-      <section class="panel summary-panel">
-        <div class="summary-metric">
-          <span>已配对</span>
-          <strong id="pairedCount">0</strong>
-        </div>
-        <div class="summary-metric">
-          <span>MD5 一致</span>
-          <strong id="md5MatchCount">0</strong>
-        </div>
-        <div class="summary-metric">
-          <span>相似</span>
-          <strong id="similarCount">0</strong>
-        </div>
-        <div class="summary-metric">
-          <span>一般</span>
-          <strong id="generalCount">0</strong>
-        </div>
-        <div class="summary-metric">
-          <span>不相似</span>
-          <strong id="differentCount">0</strong>
-        </div>
-      </section>
-
-      <section class="panel status-panel">
-        <div class="status-row">
-          <strong>状态</strong>
-          <span id="statusText">等待上传图片</span>
-        </div>
-      </section>
-
-      <section class="panel result-panel">
-        <div class="result-head">
+      <section class="result-panel">
+        <div class="result-toolbar">
           <div>
-            <p class="panel-label">Results</p>
-            <h2>对比结果</h2>
+            <h2>比對結果清單</h2>
+          </div>
+          <div class="result-toolbar-right">
+            <div class="summary-chip">
+              <span>已配對</span>
+              <strong id="pairedCount">0</strong>
+            </div>
+            <div class="summary-chip">
+              <span>MD5 一致</span>
+              <strong id="md5MatchCount">0</strong>
+            </div>
+            <div class="summary-chip">
+              <span>相似</span>
+              <strong id="similarCount">0</strong>
+            </div>
+            <div class="summary-chip">
+              <span>一般</span>
+              <strong id="generalCount">0</strong>
+            </div>
+            <div class="summary-chip">
+              <span>不相似</span>
+              <strong id="differentCount">0</strong>
+            </div>
+            <button id="resetAllButton" class="reset-button" type="button">清除重置</button>
           </div>
         </div>
-        <div class="result-list" id="resultBody">
-          <div class="empty-state">上传后点击“开始对比”查看结果</div>
+
+        <div class="result-table">
+          <div class="result-table-head">
+            <div>檔案名稱</div>
+            <div>視覺預覽 (A vs B)</div>
+            <div>MD5 校驗</div>
+            <div>pHash 距離</div>
+            <div>dHash 距離</div>
+            <div>aHash 距離</div>
+            <div>智能判定結論</div>
+          </div>
+          <div class="result-table-body" id="resultBody">
+            <div class="empty-state">上傳圖片後，點擊開始執行演算法比對</div>
+          </div>
         </div>
       </section>
     </main>
