@@ -188,29 +188,14 @@
           <div>
             <p class="panel-label">Results</p>
             <h2>对比结果</h2>
-            <p>一页看到 MD5、一致性、感知哈希差值和综合结论。</p>
+            <p>改为卡片式结果布局，不用横向滚动也能看到完整判断。</p>
           </div>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>配对键</th>
-                <th>A</th>
-                <th>B</th>
-                <th>MD5</th>
-                <th>aHash</th>
-                <th>dHash</th>
-                <th>pHash</th>
-                <th>结论</th>
-              </tr>
-            </thead>
-            <tbody id="resultBody">
-              <tr class="empty-row">
-                <td colspan="8">上传后点击“开始对比”查看结果</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="result-legend">
+          <span>每张结果卡同时展示配对信息、左右图片、MD5、三种感知哈希和综合结论。</span>
+        </div>
+        <div class="result-list" id="resultBody">
+          <div class="empty-state">上传后点击“开始对比”查看结果</div>
         </div>
       </section>
     </main>

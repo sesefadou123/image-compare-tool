@@ -624,44 +624,98 @@ function renderResults(results) {
     return;
   }
 
-  elements.resultBody.innerHTML = results.map(renderResultRow).join("");
+  elements.resultBody.innerHTML = results.map(renderResultCard).join("");
 }
 
-function renderResultRow(result) {
+function renderResultCard(result) {
   if (result.missing) {
     return `
-      <tr class="missing-row">
-        <td>${escapeHtml(result.key)}</td>
-        <td>${renderPreviewCell(result.left)}</td>
-        <td>${renderPreviewCell(result.right)}</td>
-        <td><span class="md5-badge md5-different">${result.errorMessage ? "处理失败" : "缺少图片"}</span></td>
-        <td>-</td>
-        <td>-</td>
-        <td>-</td>
-        <td>
+      <article class="result-card missing-row">
+        <div class="result-card-head">
+          <div class="result-key-wrap">
+            <span class="result-card-label">配对键</span>
+            <strong class="result-key">${escapeHtml(result.key)}</strong>
+          </div>
           <span class="conclusion-badge ${result.conclusionClass}" title="${escapeHtml(result.errorMessage || result.conclusion)}">
             ${result.conclusion}
           </span>
-        </td>
-      </tr>
+        </div>
+        <div class="result-card-body">
+          <div class="result-compare-grid">
+            <section class="result-column">
+              <span class="result-column-label">A</span>
+              ${renderPreviewCell(result.left)}
+            </section>
+            <section class="result-column">
+              <span class="result-column-label">B</span>
+              ${renderPreviewCell(result.right)}
+            </section>
+          </div>
+          <div class="result-metrics">
+            ${renderMetricCard("MD5", `<span class="md5-badge md5-different">${result.errorMessage ? "处理失败" : "缺少图片"}</span>`)}
+            ${renderMetricCard("aHash", "-")}
+            ${renderMetricCard("dHash", "-")}
+            ${renderMetricCard("pHash", "-")}
+          </div>
+        </div>
+      </article>
     `;
   }
 
   return `
-    <tr>
-      <td>${escapeHtml(result.key)}</td>
-      <td>${renderPreviewCell(result.left)}</td>
-      <td>${renderPreviewCell(result.right)}</td>
-      <td>
-        <span class="md5-badge ${result.md5Equal ? "md5-match" : "md5-different"}">
-          ${result.md5Equal ? "一致" : "不一致"}
-        </span>
-      </td>
-      <td><span class="hash-distance ${result.ahashDistance <= 5 ? "is-close" : ""}">${result.ahashDistance}</span></td>
-      <td><span class="hash-distance ${result.dhashDistance <= 5 ? "is-close" : ""}">${result.dhashDistance}</span></td>
-      <td><span class="hash-distance ${result.phashDistance <= 5 ? "is-close" : ""}">${result.phashDistance}</span></td>
-      <td><span class="conclusion-badge ${result.conclusionClass}">${result.conclusion}</span></td>
-    </tr>
+    <article class="result-card">
+      <div class="result-card-head">
+        <div class="result-key-wrap">
+          <span class="result-card-label">配对键</span>
+          <strong class="result-key">${escapeHtml(result.key)}</strong>
+        </div>
+        <span class="conclusion-badge ${result.conclusionClass}">${result.conclusion}</span>
+      </div>
+      <div class="result-card-body">
+        <div class="result-compare-grid">
+          <section class="result-column">
+            <span class="result-column-label">A</span>
+            ${renderPreviewCell(result.left)}
+          </section>
+          <section class="result-column">
+            <span class="result-column-label">B</span>
+            ${renderPreviewCell(result.right)}
+          </section>
+        </div>
+        <div class="result-metrics">
+          ${renderMetricCard(
+            "MD5",
+            `<span class="md5-badge ${result.md5Equal ? "md5-match" : "md5-different"}">${result.md5Equal ? "一致" : "不一致"}</span>`,
+            true,
+          )}
+          ${renderMetricCard("aHash", result.ahashDistance, false, result.ahashDistance <= 5)}
+          ${renderMetricCard("dHash", result.dhashDistance, false, result.dhashDistance <= 5)}
+          ${renderMetricCard("pHash", result.phashDistance, false, result.phashDistance <= 5)}
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderMetricCard(label, value, wide = false, isClose = false) {
+  const cardClass = `metric-card${wide ? " metric-wide" : ""}`;
+
+  if (typeof value === "number") {
+    return `
+      <div class="${cardClass}">
+        <span class="metric-label">${label}</span>
+        <div class="metric-value is-number">
+          <span class="hash-distance ${isClose ? "is-close" : ""}">${value}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="${cardClass}">
+      <span class="metric-label">${label}</span>
+      <div class="metric-value">${value}</div>
+    </div>
   `;
 }
 
@@ -713,9 +767,7 @@ function resetSummary() {
 
 function renderEmpty(message) {
   elements.resultBody.innerHTML = `
-    <tr class="empty-row">
-      <td colspan="8">${escapeHtml(message)}</td>
-    </tr>
+    <div class="empty-state">${escapeHtml(message)}</div>
   `;
 }
 
