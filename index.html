@@ -3,27 +3,67 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>图片对比小工具</title>
+    <title>PixelProof Studio</title>
+    <meta
+      name="description"
+      content="PixelProof Studio 用于对比两组图片的 MD5 与 aHash、dHash、pHash 差值，支持文件夹、单张图片和多张图片拖拽上传。"
+    />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="app-shell">
       <section class="hero">
-        <div>
-          <p class="eyebrow">Image Compare</p>
-          <h1>图片对比小工具</h1>
+        <div class="hero-copy-block">
+          <p class="eyebrow">PixelProof Studio</p>
+          <h1>更克制地判断图片是否真的一致。</h1>
           <p class="hero-copy">
-            对比两个目录或两组图片的 MD5 是否一致，并计算 aHash、dHash、pHash
-            的差值。支持整目录上传，也支持单张或多张图片上传。
+            面向设计、内容与审核场景的轻量图片核验工具。对比两组图片的 MD5、一致性和
+            aHash、dHash、pHash 感知差值，适合快速筛查目录差异、复核素材版本和定位近似图。
           </p>
+          <div class="hero-actions">
+            <button id="compareButton" class="primary-button" type="button">开始对比</button>
+            <a class="secondary-link" href="#uploadSection">查看上传区域</a>
+          </div>
+          <div class="hero-meta">
+            <span>纯前端运行</span>
+            <span>支持拖拽文件夹</span>
+            <span>本地浏览器处理</span>
+          </div>
         </div>
-        <div class="hero-note">
-          <p>判定规则</p>
-          <ul>
-            <li>`aHash / dHash / pHash <= 5` 的差值单元格标红</li>
-            <li>结论分为：不相似（绿色）/ 一般（黄色）/ 相似（红色）</li>
-            <li>目录对比优先按相对路径配对，其次按文件名，最后按顺序</li>
-          </ul>
+
+        <aside class="hero-panel">
+          <div class="hero-panel-section">
+            <p class="hero-panel-label">结论定义</p>
+            <ul class="hero-list">
+              <li>相似：红色标记，适合快速确认高度接近或完全一致的图片。</li>
+              <li>一般：黄色标记，适合人工二次复核。</li>
+              <li>不相似：绿色标记，表示差异明显。</li>
+            </ul>
+          </div>
+          <div class="hero-panel-section">
+            <p class="hero-panel-label">差值提示</p>
+            <p class="hero-note-copy">
+              当 `aHash`、`dHash`、`pHash` 的任一差值小于等于 `5` 时，该数值会高亮标红。
+            </p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="panel intro-strip">
+        <div class="intro-item">
+          <span class="intro-kicker">Formal Name</span>
+          <strong>PixelProof Studio</strong>
+          <p>一个更适合公开部署、团队共享和长期使用的正式项目名。</p>
+        </div>
+        <div class="intro-item">
+          <span class="intro-kicker">How It Pairs</span>
+          <strong>相对路径优先</strong>
+          <p>默认按目录相对路径配对，其次按文件名，最后按上传顺序。</p>
+        </div>
+        <div class="intro-item">
+          <span class="intro-kicker">Privacy</span>
+          <strong>浏览器本地处理</strong>
+          <p>没有后端，不上传图片内容，适合在公司电脑直接打开页面使用。</p>
         </div>
       </section>
 
@@ -41,28 +81,41 @@
           <label for="similarityThreshold">一般判定阈值</label>
           <input id="similarityThreshold" type="number" min="6" max="64" value="12" />
         </div>
-        <button id="compareButton" class="primary-button" type="button">开始对比</button>
+        <div class="setting-item setting-copy">
+          <span>操作提示</span>
+          <p>支持点击上传，也支持把文件夹、单张图片或多张图片直接拖进左右任意区域。</p>
+        </div>
       </section>
 
-      <section class="upload-grid">
+      <section class="upload-grid" id="uploadSection">
         <article class="panel upload-panel" data-side="left">
           <div class="panel-head">
             <div>
+              <p class="panel-label">Source Set A</p>
               <h2>对比组 A</h2>
-              <p>可上传整个文件夹，也可补充单张或多张图片</p>
+              <p>上传原始素材、标准版本或参考目录</p>
             </div>
             <button class="ghost-button clear-button" data-side="left" type="button">清空</button>
           </div>
-          <div class="input-grid">
-            <label class="drop-card">
-              <span>上传文件夹</span>
-              <input id="leftFolderInput" type="file" webkitdirectory directory multiple />
-            </label>
-            <label class="drop-card">
-              <span>上传图片</span>
-              <input id="leftFilesInput" type="file" accept="image/*" multiple />
-            </label>
+
+          <div class="drop-surface" data-drop-zone="left">
+            <div class="drop-surface-copy">
+              <p class="drop-title">拖拽图片或整个文件夹到这里</p>
+              <p class="drop-description">支持目录、单张图片和多张图片混合上传</p>
+            </div>
+            <div class="quick-actions">
+              <label class="quick-action-card">
+                <span>选择文件夹</span>
+                <input id="leftFolderInput" type="file" webkitdirectory directory multiple />
+              </label>
+              <label class="quick-action-card">
+                <span>选择图片</span>
+                <input id="leftFilesInput" type="file" accept="image/*" multiple />
+              </label>
+            </div>
+            <p class="drop-footnote">拖拽上传会自动保留目录层级，便于按相对路径配对。</p>
           </div>
+
           <p class="selection-summary" id="leftSummary">未选择任何图片</p>
           <div class="selection-list" id="leftSelectionList"></div>
         </article>
@@ -70,21 +123,31 @@
         <article class="panel upload-panel" data-side="right">
           <div class="panel-head">
             <div>
+              <p class="panel-label">Source Set B</p>
               <h2>对比组 B</h2>
-              <p>支持目录与目录、图片与图片之间混合对比</p>
+              <p>上传待核对版本、导出结果或待审目录</p>
             </div>
             <button class="ghost-button clear-button" data-side="right" type="button">清空</button>
           </div>
-          <div class="input-grid">
-            <label class="drop-card">
-              <span>上传文件夹</span>
-              <input id="rightFolderInput" type="file" webkitdirectory directory multiple />
-            </label>
-            <label class="drop-card">
-              <span>上传图片</span>
-              <input id="rightFilesInput" type="file" accept="image/*" multiple />
-            </label>
+
+          <div class="drop-surface" data-drop-zone="right">
+            <div class="drop-surface-copy">
+              <p class="drop-title">拖拽图片或整个文件夹到这里</p>
+              <p class="drop-description">目录对目录、图对图都可以直接比较</p>
+            </div>
+            <div class="quick-actions">
+              <label class="quick-action-card">
+                <span>选择文件夹</span>
+                <input id="rightFolderInput" type="file" webkitdirectory directory multiple />
+              </label>
+              <label class="quick-action-card">
+                <span>选择图片</span>
+                <input id="rightFilesInput" type="file" accept="image/*" multiple />
+              </label>
+            </div>
+            <p class="drop-footnote">如果两侧目录结构一致，默认会优先按相对路径自动配对。</p>
           </div>
+
           <p class="selection-summary" id="rightSummary">未选择任何图片</p>
           <div class="selection-list" id="rightSelectionList"></div>
         </article>
@@ -123,8 +186,9 @@
       <section class="panel result-panel">
         <div class="result-head">
           <div>
+            <p class="panel-label">Results</p>
             <h2>对比结果</h2>
-            <p>点击表头可快速查看 MD5 与三种感知哈希的判断结果</p>
+            <p>一页看到 MD5、一致性、感知哈希差值和综合结论。</p>
           </div>
         </div>
         <div class="table-wrap">

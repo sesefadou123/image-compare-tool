@@ -1,29 +1,37 @@
-# 图片对比小工具
+# PixelProof Studio
 
-一个纯前端小工具，用来对比两组图片的：
+PixelProof Studio 是一个纯前端的图片一致性核验工具，用来对比两组图片的：
 
 - `MD5` 是否一致
 - `aHash`
 - `dHash`
 - `pHash`
 
-支持：
+适合用在设计交付、素材复核、版本比对和目录巡检场景。
+
+## 支持能力
 
 - 整个文件夹上传对比
 - 单张图片上传对比
 - 多张图片上传对比
+- 拖拽图片上传
+- 拖拽整个文件夹上传
 
 ## 使用方式
 
 直接打开 [index.html](./index.html) 即可使用。
 
-如果你希望通过本地服务打开，也可以在当前目录执行：
+如果希望通过本地服务打开，可以在当前目录执行：
 
 ```bash
 python3 -m http.server 8080
 ```
 
-然后访问 `http://localhost:8080/image-compare-tool/`。
+然后访问：
+
+```text
+http://127.0.0.1:8080/image-compare-tool/
+```
 
 ## 配对规则
 
@@ -35,7 +43,7 @@ python3 -m http.server 8080
 
 ## 结论规则
 
-- `aHash / dHash / pHash` 任意差值 `<= 5` 时，该单元格会标红
+- `aHash / dHash / pHash` 任意差值 `<= 5` 时，对应单元格会标红
 - 结论颜色：
   - `相似`：红色
   - `一般`：黄色

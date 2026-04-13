@@ -5,6 +5,10 @@ const state = {
 
 const analysisCache = new Map();
 const cosineTableCache = new Map();
+const dragDepth = {
+  left: 0,
+  right: 0,
+};
 
 const elements = {
   pairingMode: document.getElementById("pairingMode"),
@@ -28,6 +32,7 @@ init();
 function init() {
   bindSideInputs("left");
   bindSideInputs("right");
+  bindDropZones();
   bindClearButtons();
   elements.compareButton.addEventListener("click", handleCompare);
 }
@@ -37,13 +42,58 @@ function bindSideInputs(side) {
   const filesInput = document.getElementById(`${side}FilesInput`);
 
   folderInput.addEventListener("change", (event) => {
-    appendFiles(side, Array.from(event.target.files || []), true);
+    const descriptors = Array.from(event.target.files || []).map((file) => ({
+      file,
+      fromDirectory: true,
+      rawRelativePath: file.webkitRelativePath || file.name,
+      displayPath: file.webkitRelativePath || file.name,
+    }));
+    appendFileDescriptors(side, descriptors);
     folderInput.value = "";
   });
 
   filesInput.addEventListener("change", (event) => {
-    appendFiles(side, Array.from(event.target.files || []), false);
+    const descriptors = Array.from(event.target.files || []).map((file) => ({
+      file,
+      fromDirectory: false,
+      rawRelativePath: "",
+      displayPath: file.name,
+    }));
+    appendFileDescriptors(side, descriptors);
     filesInput.value = "";
+  });
+}
+
+function bindDropZones() {
+  document.querySelectorAll("[data-drop-zone]").forEach((zone) => {
+    const side = zone.dataset.dropZone;
+    zone.addEventListener("dragenter", (event) => {
+      event.preventDefault();
+      dragDepth[side] += 1;
+      zone.classList.add("is-active");
+    });
+
+    zone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+      zone.classList.add("is-active");
+    });
+
+    zone.addEventListener("dragleave", (event) => {
+      event.preventDefault();
+      dragDepth[side] = Math.max(0, dragDepth[side] - 1);
+      if (dragDepth[side] === 0) {
+        zone.classList.remove("is-active");
+      }
+    });
+
+    zone.addEventListener("drop", async (event) => {
+      event.preventDefault();
+      dragDepth[side] = 0;
+      zone.classList.remove("is-active");
+      const descriptors = await extractDroppedItems(event.dataTransfer);
+      appendFileDescriptors(side, descriptors);
+    });
   });
 }
 
@@ -59,11 +109,15 @@ function bindClearButtons() {
   });
 }
 
-function appendFiles(side, files, fromDirectory) {
-  const imageFiles = files.filter((file) => file.type.startsWith("image/"));
-  const normalized = imageFiles.map((file, index) => normalizeFileEntry(file, fromDirectory, index));
+function appendFileDescriptors(side, descriptors) {
+  const imageDescriptors = descriptors.filter(({ file }) => file.type.startsWith("image/"));
+  const normalized = imageDescriptors.map((descriptor, index) => normalizeFileEntry(descriptor, index));
   state[side] = deduplicateEntries(state[side].concat(normalized));
   updateSelectionUI(side);
+  if (!normalized.length) {
+    setStatus("未识别到可处理的图片文件，请拖入或选择图片格式文件");
+    return;
+  }
   setStatus(`${side === "left" ? "对比组 A" : "对比组 B"} 已载入 ${normalized.length} 张图片`);
 }
 
@@ -80,15 +134,16 @@ function deduplicateEntries(entries) {
   return Array.from(map.values());
 }
 
-function normalizeFileEntry(file, fromDirectory, index) {
-  const rawRelativePath = fromDirectory ? file.webkitRelativePath || file.name : "";
+function normalizeFileEntry(descriptor, index) {
+  const { file, fromDirectory, rawRelativePath = "", displayPath = "" } = descriptor;
   return {
     id: `${file.name}-${file.size}-${file.lastModified}-${index}-${Math.random().toString(16).slice(2)}`,
     file,
     name: file.name,
-    displayPath: rawRelativePath || file.name,
+    displayPath: displayPath || rawRelativePath || file.name,
     relativePath: sanitizeRelativePath(rawRelativePath),
     previewUrl: URL.createObjectURL(file),
+    fromDirectory,
   };
 }
 
@@ -101,6 +156,82 @@ function sanitizeRelativePath(path) {
     return segments[0] || "";
   }
   return segments.slice(1).join("/");
+}
+
+async function extractDroppedItems(dataTransfer) {
+  const items = Array.from(dataTransfer?.items || []);
+  if (items.length && items.some((item) => typeof item.webkitGetAsEntry === "function")) {
+    const descriptors = [];
+    for (const item of items) {
+      const entry = item.webkitGetAsEntry();
+      if (!entry) {
+        continue;
+      }
+      const nestedDescriptors = await walkFileTree(entry, "");
+      descriptors.push(...nestedDescriptors);
+    }
+    if (descriptors.length) {
+      return descriptors;
+    }
+  }
+
+  return Array.from(dataTransfer?.files || []).map((file) => ({
+    file,
+    fromDirectory: false,
+    rawRelativePath: "",
+    displayPath: file.name,
+  }));
+}
+
+async function walkFileTree(entry, parentPath) {
+  const currentPath = parentPath ? `${parentPath}/${entry.name}` : entry.name;
+
+  if (entry.isFile) {
+    const file = await fileEntryToFile(entry);
+    return [
+      {
+        file,
+        fromDirectory: Boolean(parentPath),
+        rawRelativePath: currentPath,
+        displayPath: currentPath,
+      },
+    ];
+  }
+
+  if (!entry.isDirectory) {
+    return [];
+  }
+
+  const reader = entry.createReader();
+  const entries = await readAllDirectoryEntries(reader);
+  const collected = [];
+
+  for (const child of entries) {
+    const nested = await walkFileTree(child, currentPath);
+    collected.push(...nested);
+  }
+
+  return collected;
+}
+
+function fileEntryToFile(entry) {
+  return new Promise((resolve, reject) => {
+    entry.file(resolve, reject);
+  });
+}
+
+async function readAllDirectoryEntries(reader) {
+  const entries = [];
+  while (true) {
+    const batch = await new Promise((resolve, reject) => {
+      reader.readEntries(resolve, reject);
+    });
+    if (!batch.length) {
+      break;
+    }
+    entries.push(...batch);
+  }
+  return entries;
 }
 
 function updateSelectionUI(side) {
@@ -611,6 +742,7 @@ function nextFrame() {
 
 function releaseEntries(entries) {
   entries.forEach((entry) => {
+    analysisCache.delete(entry.file);
     if (entry.previewUrl) {
       URL.revokeObjectURL(entry.previewUrl);
     }
