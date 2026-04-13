@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>图片对比小工具</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Image Compare</p>
+          <h1>图片对比小工具</h1>
+          <p class="hero-copy">
+            对比两个目录或两组图片的 MD5 是否一致，并计算 aHash、dHash、pHash
+            的差值。支持整目录上传，也支持单张或多张图片上传。
+          </p>
+        </div>
+        <div class="hero-note">
+          <p>判定规则</p>
+          <ul>
+            <li>`aHash / dHash / pHash <= 5` 的差值单元格标红</li>
+            <li>结论分为：不相似（绿色）/ 一般（黄色）/ 相似（红色）</li>
+            <li>目录对比优先按相对路径配对，其次按文件名，最后按顺序</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="panel settings-panel">
+        <div class="setting-item">
+          <label for="pairingMode">配对策略</label>
+          <select id="pairingMode">
+            <option value="auto">自动</option>
+            <option value="relative">按目录相对路径</option>
+            <option value="filename">按文件名</option>
+            <option value="index">按上传顺序</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <label for="similarityThreshold">一般判定阈值</label>
+          <input id="similarityThreshold" type="number" min="6" max="64" value="12" />
+        </div>
+        <button id="compareButton" class="primary-button" type="button">开始对比</button>
+      </section>
+
+      <section class="upload-grid">
+        <article class="panel upload-panel" data-side="left">
+          <div class="panel-head">
+            <div>
+              <h2>对比组 A</h2>
+              <p>可上传整个文件夹，也可补充单张或多张图片</p>
+            </div>
+            <button class="ghost-button clear-button" data-side="left" type="button">清空</button>
+          </div>
+          <div class="input-grid">
+            <label class="drop-card">
+              <span>上传文件夹</span>
+              <input id="leftFolderInput" type="file" webkitdirectory directory multiple />
+            </label>
+            <label class="drop-card">
+              <span>上传图片</span>
+              <input id="leftFilesInput" type="file" accept="image/*" multiple />
+            </label>
+          </div>
+          <p class="selection-summary" id="leftSummary">未选择任何图片</p>
+          <div class="selection-list" id="leftSelectionList"></div>
+        </article>
+
+        <article class="panel upload-panel" data-side="right">
+          <div class="panel-head">
+            <div>
+              <h2>对比组 B</h2>
+              <p>支持目录与目录、图片与图片之间混合对比</p>
+            </div>
+            <button class="ghost-button clear-button" data-side="right" type="button">清空</button>
+          </div>
+          <div class="input-grid">
+            <label class="drop-card">
+              <span>上传文件夹</span>
+              <input id="rightFolderInput" type="file" webkitdirectory directory multiple />
+            </label>
+            <label class="drop-card">
+              <span>上传图片</span>
+              <input id="rightFilesInput" type="file" accept="image/*" multiple />
+            </label>
+          </div>
+          <p class="selection-summary" id="rightSummary">未选择任何图片</p>
+          <div class="selection-list" id="rightSelectionList"></div>
+        </article>
+      </section>
+
+      <section class="panel summary-panel">
+        <div class="summary-metric">
+          <span>已配对</span>
+          <strong id="pairedCount">0</strong>
+        </div>
+        <div class="summary-metric">
+          <span>MD5 一致</span>
+          <strong id="md5MatchCount">0</strong>
+        </div>
+        <div class="summary-metric">
+          <span>相似</span>
+          <strong id="similarCount">0</strong>
+        </div>
+        <div class="summary-metric">
+          <span>一般</span>
+          <strong id="generalCount">0</strong>
+        </div>
+        <div class="summary-metric">
+          <span>不相似</span>
+          <strong id="differentCount">0</strong>
+        </div>
+      </section>
+
+      <section class="panel status-panel">
+        <div class="status-row">
+          <strong>状态</strong>
+          <span id="statusText">等待上传图片</span>
+        </div>
+      </section>
+
+      <section class="panel result-panel">
+        <div class="result-head">
+          <div>
+            <h2>对比结果</h2>
+            <p>点击表头可快速查看 MD5 与三种感知哈希的判断结果</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>配对键</th>
+                <th>A</th>
+                <th>B</th>
+                <th>MD5</th>
+                <th>aHash</th>
+                <th>dHash</th>
+                <th>pHash</th>
+                <th>结论</th>
+              </tr>
+            </thead>
+            <tbody id="resultBody">
+              <tr class="empty-row">
+                <td colspan="8">上传后点击“开始对比”查看结果</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
